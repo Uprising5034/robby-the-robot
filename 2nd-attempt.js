@@ -1,6 +1,10 @@
 const getCommands = (field, power) => {
   const { fieldArray, sideLength } = getFieldArray(field);
 
+  if (power < sideLength * 2) {
+    return []
+  }
+
   const graph = getGraph(fieldArray, sideLength);
 
   const filterGraph = removeGraphVertices(graph);
@@ -9,11 +13,13 @@ const getCommands = (field, power) => {
 
   const result = bfs(filterGraph, startEnd[0], startEnd[1]);
 
-  return result.time <= power ? result.instructions : []
+  return result && result.time <= power ? result.instructions : [];
 };
 
 function getFieldArray(field) {
   const sideLength = Math.sqrt(field.length);
+
+  console.log('sideLength :>> ', sideLength);
 
   let fieldArray = [];
   for (let i = 0; i < field.length; i++) {
@@ -124,18 +130,33 @@ function bfs(graph, start, end) {
             neighbour["direction"] = coordDiff;
             neighbour["instructions"].push(...vertex["instructions"]);
 
-            const dirDiff = vertex.direction.map((val, idx) => {
+            const dirDiffAbs = vertex.direction.map((val, idx) => {
               return Math.abs(val - neighbour.direction[idx]);
             });
 
-            neighbour.dirDiff = dirDiff;
-            if (dirDiff.includes(1)) {
+            neighbour.dirDiffAbs = dirDiffAbs;
+            if (dirDiffAbs.includes(1)) {
               neighbour.wait++;
-              neighbour.instructions.push("turn");
-            } else if (dirDiff.includes(2)) {
+              const rightDirIdx = right.findIndex(
+                (item) =>
+                  vertex.direction[0] === item[0] &&
+                  vertex.direction[1] === item[1]
+              );
+
+              const checkRight = right[(rightDirIdx + 1) % 4];
+
+              if (
+                neighbour.direction[0] === checkRight[0] &&
+                neighbour.direction[1] === checkRight[1]
+              ) {
+                neighbour.instructions.push("r");
+              } else {
+                neighbour.instructions.push("l");
+              }
+            } else if (dirDiffAbs.includes(2)) {
               neighbour.wait += 2;
-              neighbour.instructions.push("turn");
-              neighbour.instructions.push("turn");
+              neighbour.instructions.push("r");
+              neighbour.instructions.push("r");
             }
 
             neighbour.instructions.push("f");
@@ -150,9 +171,17 @@ function bfs(graph, start, end) {
   return result[end];
 }
 
-// console.dir(getCommands("S...#..T.", 10), { depth: null });
-console.log(getCommands("S#.##...T", 20))
+// ("##T");
+// ("S..");
+// ("###");
 
-// ("...");
-// (".#.");
-// ("...");
+const right = [
+  [0, -1],
+  [1, 0],
+  [0, 1],
+  [-1, 0],
+];
+
+console.log(getCommands("S..............T", 100));
+
+// function()
