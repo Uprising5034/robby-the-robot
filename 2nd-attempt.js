@@ -7,7 +7,9 @@ const getCommands = (field, power) => {
 
   const startEnd = findStartEnd(graph);
 
-  return bfs(filterGraph, startEnd[0], startEnd[1]);
+  const result = bfs(filterGraph, startEnd[0], startEnd[1]);
+
+  return result.time <= power ? result.instructions : []
 };
 
 function getFieldArray(field) {
@@ -92,21 +94,21 @@ function findStartEnd(graph) {
 function bfs(graph, start, end) {
   graph[start]["direction"] = [0, -1];
   const queue = [graph[start]];
-  const result = [];
+  const result = {};
 
   while (queue.length) {
     const vertex = queue.shift();
 
     if (vertex.wait) {
-      vertex.wait--
-      vertex.time++
-      queue.push(vertex)
-      continue
+      vertex.wait--;
+      vertex.time++;
+      queue.push(vertex);
+      continue;
     }
 
     if (!vertex.visited) {
       vertex.visited = true;
-      result.push(vertex);
+      result[vertex.coord] = vertex;
 
       vertex["neighbours"].forEach((entry) => {
         const neighbour = graph[entry];
@@ -116,37 +118,41 @@ function bfs(graph, start, end) {
         });
 
         if (!neighbour.visited) {
-          neighbour["time"] = vertex["time"] + 1;
-          neighbour["direction"] = coordDiff;
-          neighbour["instructions"].push(...vertex["instructions"]);
+          if (!neighbour.queued) {
+            neighbour.queued = true;
+            neighbour["time"] = vertex["time"] + 1;
+            neighbour["direction"] = coordDiff;
+            neighbour["instructions"].push(...vertex["instructions"]);
 
-          const dirDiff = vertex.direction.map((val, idx) => {
-            return Math.abs(val - neighbour.direction[idx]);
-          });
+            const dirDiff = vertex.direction.map((val, idx) => {
+              return Math.abs(val - neighbour.direction[idx]);
+            });
 
-          neighbour.dirDiff = dirDiff;
-          if (dirDiff.includes(1)) {
-            neighbour.wait++;
-            neighbour.instructions.push("turn");
-          } else if (dirDiff.includes(2)) {
-            neighbour.wait += 2;
-            neighbour.instructions.push("turn");
-            neighbour.instructions.push("turn");
+            neighbour.dirDiff = dirDiff;
+            if (dirDiff.includes(1)) {
+              neighbour.wait++;
+              neighbour.instructions.push("turn");
+            } else if (dirDiff.includes(2)) {
+              neighbour.wait += 2;
+              neighbour.instructions.push("turn");
+              neighbour.instructions.push("turn");
+            }
+
+            neighbour.instructions.push("f");
+
+            queue.push(neighbour);
           }
-
-          neighbour.instructions.push("f");
         }
-        // if ()
-        queue.push(neighbour);
       });
     }
   }
 
-  return result;
+  return result[end];
 }
 
-console.dir(getCommands("S...#..T.", 10), { depth: null });
+// console.dir(getCommands("S...#..T.", 10), { depth: null });
+console.log(getCommands("S#.##...T", 20))
 
-("...");
-(".#.");
-("...");
+// ("...");
+// (".#.");
+// ("...");
